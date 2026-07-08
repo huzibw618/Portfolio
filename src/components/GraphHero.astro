@@ -1,0 +1,19 @@
+---
+// Fixed full-viewport canvas that the knowledge graph renders into.
+// Sits behind all content; the camera flythrough + fade is scroll-driven.
+---
+<canvas
+  id="graph-canvas"
+  class="fixed inset-0 z-0 h-screen w-screen pointer-events-none"
+  aria-hidden="true"
+></canvas>
+
+<script>
+  import { mountGraph } from '../scripts/graph';
+  const canvas = document.getElementById('graph-canvas') as HTMLCanvasElement | null;
+  if (canvas) {
+    // Defer to idle so first paint of the text isn't blocked by three.js import.
+    const start = () => mountGraph(canvas).catch((e) => console.error('[graph]', e));
+    'requestIdleCallback' in window ? (window as any).requestIdleCallback(start, { timeout: 400 }) : setTimeout(start, 60);
+  }
+</script>

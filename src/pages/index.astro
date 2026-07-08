@@ -1,0 +1,43 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import GraphHero from '../components/GraphHero.astro';
+import Hero from '../components/Hero.astro';
+import Stats from '../components/Stats.astro';
+import FeaturedWork from '../components/FeaturedWork.astro';
+import AllProjects from '../components/AllProjects.astro';
+import Publication from '../components/Publication.astro';
+import Experience from '../components/Experience.astro';
+import Skills from '../components/Skills.astro';
+import Education from '../components/Education.astro';
+import Finale from '../components/Finale.astro';
+
+const allProjects = await getCollection('projects');
+
+const featuredOrder = ['legal-rag', 'parallel-interleave', 'popsign', 'spacex-starship', 'surveillance-blind-spot'];
+const featured = featuredOrder
+  .map((slug) => allProjects.find((p) => p.slug === slug))
+  .filter(Boolean) as typeof allProjects;
+
+const nonFeatured = allProjects
+  .filter((p) => !p.data.featured)
+  .sort((a, b) => b.data.date.localeCompare(a.data.date));
+---
+
+<Layout>
+  <span id="top"></span>
+  <Nav />
+  <GraphHero />
+  <main>
+    <Hero />
+    <Stats />
+    <FeaturedWork projects={featured} />
+    <AllProjects projects={nonFeatured} />
+    <Publication />
+    <Experience />
+    <Skills />
+    <Education />
+    <Finale />
+  </main>
+</Layout>

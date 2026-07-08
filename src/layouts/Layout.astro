@@ -1,0 +1,61 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Huzaifah Bin Wasim — Machine Learning Engineer',
+  description =
+    'Machine learning engineer specializing in generative AI, reinforcement learning, and robotics. Georgia Tech MS CS. Builder of a 264K-node legal knowledge graph RAG system.',
+} = Astro.props;
+
+const siteUrl = 'https://huzaifah.dev';
+const ogImage = `${siteUrl}/profile.png`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="author" content="Huzaifah Bin Wasim" />
+    <meta name="theme-color" content="#0a0a0b" />
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={siteUrl} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Flag motion capability before paint so [data-reveal] can hide safely -->
+    <script is:inline>
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('motion');
+      }
+    </script>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+
+    <slot />
+
+    <!-- Global motion bootstrap: Lenis smooth scroll wired into GSAP ScrollTrigger,
+         custom cursor, magnetic buttons, and generic reveal-on-scroll. -->
+    <script>
+      import { initMotion } from '../scripts/motion';
+      initMotion();
+    </script>
+  </body>
+</html>

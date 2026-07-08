@@ -1,0 +1,87 @@
+---
+const roles = [
+  {
+    title: 'Graduate Research Assistant',
+    org: 'Georgia Institute of Technology',
+    location: 'Shenzhen, China',
+    period: '2025',
+    body: 'Urban mobility optimization with predictive ML — +15% prediction accuracy, and SUMO simulation models 30% faster without losing fidelity.',
+  },
+  {
+    title: 'Machine Learning Engineer',
+    org: 'Adept Technology Solutions',
+    location: 'Islamabad, Pakistan',
+    period: '2024',
+    body: 'Built AI for ASCEND, a synthetic-data platform (+25% data quality). Led a full refactor with CI/CD on AWS, cutting deploys from hours to under 15 minutes.',
+  },
+  {
+    title: 'Research Assistant',
+    org: 'Robotics & Machine Intelligence Lab (ROMI), NUST',
+    location: 'Islamabad, Pakistan',
+    period: '2020–24',
+    body: 'Co-authored a PoPETs 2021 paper, and built a full computer-vision stack for surveillance coverage optimization (+20% detection).',
+  },
+  {
+    title: 'Research Intern',
+    org: 'TUKL-NCAI Deep Learning Lab',
+    location: 'Islamabad, Pakistan',
+    period: '2020–21',
+    body: 'Generative and predictive models — Transformers, LSTMs, GANs, Deep Q-Networks — applied to residential load forecasting.',
+  },
+];
+---
+
+<section id="experience" class="relative z-10 bg-ink border-t border-ink-line">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-24 md:py-36">
+    <p class="kicker mb-4" data-reveal>Trajectory</p>
+    <h2 class="display text-cream text-5xl md:text-7xl mb-16" data-reveal>Experience.</h2>
+
+    <div class="relative" id="timeline">
+      <!-- track -->
+      <div class="absolute left-0 top-1 bottom-1 w-px bg-ink-line"></div>
+      <div class="absolute left-0 top-1 w-px bg-emerald origin-top" id="timeline-fill" style="height: 100%; transform: scaleY(0)"></div>
+
+      <div class="flex flex-col gap-14 pl-8 md:pl-12">
+        {roles.map((r) => (
+          <div class="relative timeline-entry" data-reveal>
+            <span class="absolute -left-8 md:-left-12 top-1.5 flex h-3 w-3 -translate-x-1/2 items-center justify-center">
+              <span class="h-2 w-2 rounded-full bg-emerald"></span>
+              <span class="absolute h-3 w-3 rounded-full bg-emerald/30"></span>
+            </span>
+
+            <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1 mb-2">
+              <h3 class="font-display font-semibold text-xl md:text-2xl text-cream">{r.title}</h3>
+              <span class="font-mono text-xs text-emerald whitespace-nowrap">{r.period}</span>
+            </div>
+            <p class="font-mono text-xs uppercase tracking-[0.15em] text-cream-dim mb-3">
+              {r.org} · {r.location}
+            </p>
+            <p class="text-cream-dim leading-relaxed max-w-2xl">{r.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fill = document.getElementById('timeline-fill');
+  const timeline = document.getElementById('timeline');
+
+  if (fill && timeline) {
+    if (reduced) {
+      fill.style.transform = 'scaleY(1)';
+    } else {
+      gsap.to(fill, {
+        scaleY: 1,
+        ease: 'none',
+        scrollTrigger: { trigger: timeline, start: 'top 70%', end: 'bottom 80%', scrub: 0.5 },
+      });
+    }
+  }
+</script>

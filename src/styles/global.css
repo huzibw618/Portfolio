@@ -1,0 +1,114 @@
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: #0a0a0b;
+    color: #ede9e0;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: auto; /* Lenis handles smoothing */
+  }
+  body {
+    @apply font-sans bg-ink text-cream overflow-x-hidden;
+  }
+  ::selection {
+    background: #00e599;
+    color: #0a0a0b;
+  }
+  /* Emerald focus ring for keyboard a11y */
+  :focus-visible {
+    outline: 2px solid #00e599;
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .kicker {
+    @apply font-mono text-sm uppercase tracking-[0.25em] text-emerald;
+  }
+  .display {
+    @apply font-display font-semibold tracking-[-0.02em] leading-[0.95];
+  }
+  .tag {
+    @apply font-mono text-xs uppercase tracking-wider text-cream-dim
+           border border-ink-line rounded-full px-2.5 py-1;
+  }
+  .rule {
+    @apply h-px w-full bg-ink-line;
+  }
+}
+
+/* --- Film grain overlay --- */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --- Custom emerald cursor dot (desktop, pointer devices) --- */
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00e599;
+  pointer-events: none;
+  z-index: 101;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, background 0.2s;
+  mix-blend-mode: difference;
+}
+.cursor-dot.grow {
+  width: 44px;
+  height: 44px;
+  background: #5fffc4;
+}
+
+/* --- Reduced motion: strip all choreography, keep everything readable --- */
+@media (prefers-reduced-motion: reduce) {
+  .grain,
+  .cursor-dot {
+    display: none;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Reveal helper: elements start hidden only when JS motion is active */
+html.motion [data-reveal] {
+  opacity: 0;
+  will-change: transform, opacity;
+}

@@ -1,0 +1,137 @@
+---
+// Media slot for featured projects.
+//   type="graph"  -> live knowledge-graph cluster (Legal RAG)
+//   type="video"  -> muted looping video, lazy, plays on scroll-in (pass `src`)
+//   type="image"  -> image gallery + lightbox (pass `images`)
+// Until real assets exist in /public/media/<slug>/, an elegant placeholder shows.
+interface Props {
+  type: 'graph' | 'video' | 'image';
+  slug: string;
+  src?: string;
+  images?: string[];
+  poster?: string;
+  fit?: 'cover' | 'contain';
+}
+const { type, slug, src, images = [], poster, fit = 'cover' } = Astro.props;
+const hasVideo = type === 'video' && !!src;
+const hasImages = type === 'image' && images.length > 0;
+const showPlaceholder = (type === 'video' && !hasVideo) || (type === 'image' && !hasImages);
+---
+
+<div
+  class="relative w-full h-full min-h-[280px] md:min-h-[420px] rounded-xl overflow-hidden border border-ink-line bg-ink-soft"
+  data-media-container
+>
+  {type === 'graph' && (
+    <canvas class="absolute inset-0 h-full w-full" data-graph-media aria-label="Interactive knowledge graph"></canvas>
+  )}
+
+  {hasVideo && (
+    <video
+      class:list={["absolute inset-0 h-full w-full", fit === 'contain' ? 'object-contain' : 'object-cover']}
+      data-media-video
+      src={src}
+      poster={poster}
+      muted
+      playsinline
+      preload="none"
+      aria-label={`${slug} demo`}
+    ></video>
+  )}
+
+  {hasImages && (
+    <div class="grid grid-cols-2 gap-1 h-full">
+      {images.slice(0, 4).map((img, i) => (
+        <button
+          class="relative overflow-hidden group"
+          data-lightbox-src={img}
+          aria-label="Open image"
+        >
+          <img src={img} alt={`${slug} ${i + 1}`} loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        </button>
+      ))}
+    </div>
+  )}
+
+  {showPlaceholder && (
+    <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6">
+      <div class="placeholder-shimmer absolute inset-0 opacity-40"></div>
+      <svg class="relative h-8 w-8 text-emerald/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        {type === 'video'
+          ? <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          : <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />}
+      </svg>
+      <p class="relative font-mono text-xs uppercase tracking-[0.2em] text-cream-dim">
+        {type === 'video' ? 'Video' : 'Gallery'} · drop assets in
+      </p>
+      <code class="relative font-mono text-xs text-emerald/80">/public/media/{slug}/</code>
+    </div>
+  )}
+</div>
+
+<style>
+  .placeholder-shimmer {
+    background: linear-gradient(115deg, transparent 30%, rgba(0, 229, 153, 0.06) 50%, transparent 70%);
+    background-size: 220% 100%;
+    animation: shimmer 3.5s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 130% 0; }
+    100% { background-position: -130% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .placeholder-shimmer { animation: none; }
+  }
+</style>
+
+<script>
+  // Mount graph-media instances
+  import { mountGraphMedia } from '../scripts/graph';
+  document.querySelectorAll<HTMLCanvasElement>('[data-graph-media]').forEach((canvas) => {
+    const container = canvas.closest('[data-media-container]') as HTMLElement;
+    const start = () => mountGraphMedia(canvas, container).catch((e) => console.error('[graph-media]', e));
+    'requestIdleCallback' in window ? (window as any).requestIdleCallback(start, { timeout: 600 }) : setTimeout(start, 120);
+  });
+
+  // Lazy-play videos on scroll-in, with a 3s pause on the last frame before looping.
+  const LOOP_PAUSE_MS = 3000;
+  const vids = document.querySelectorAll<HTMLVideoElement>('[data-media-video]');
+  if (vids.length) {
+    const timers = new WeakMap<HTMLVideoElement, number>();
+    const visible = new WeakSet<HTMLVideoElement>();
+
+    const clearTimer = (v: HTMLVideoElement) => {
+      const t = timers.get(v);
+      if (t) { clearTimeout(t); timers.delete(v); }
+    };
+
+    vids.forEach((v) => {
+      v.addEventListener('ended', () => {
+        clearTimer(v);
+        const t = window.setTimeout(() => {
+          timers.delete(v);
+          if (!visible.has(v)) return;
+          v.currentTime = 0;
+          v.play?.().catch(() => {});
+        }, LOOP_PAUSE_MS);
+        timers.set(v, t);
+      });
+    });
+
+    const vio = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        const v = e.target as HTMLVideoElement;
+        if (e.isIntersecting) {
+          visible.add(v);
+          v.load?.();
+          v.play?.().catch(() => {});
+        } else {
+          visible.delete(v);
+          clearTimer(v);
+          v.pause?.();
+        }
+      });
+    }, { threshold: 0.25 });
+    vids.forEach((v) => vio.observe(v));
+  }
+</script>

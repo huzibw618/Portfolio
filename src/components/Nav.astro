@@ -1,0 +1,26 @@
+---
+// Minimal fixed nav — monogram + a couple of mono links. Fades in after the hero.
+---
+<nav id="nav" class="fixed top-0 inset-x-0 z-40 opacity-0 pointer-events-none transition-opacity duration-500">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 h-16 flex items-center justify-between">
+    <a href="#top" class="font-display font-semibold text-lg tracking-tight text-cream hover:text-emerald transition-colors" data-magnetic>HW</a>
+    <div class="flex items-center gap-6 font-mono text-sm uppercase tracking-[0.2em] text-cream-dim">
+      <a href="#work" class="hidden sm:inline hover:text-emerald transition-colors">Work</a>
+      <a href="#experience" class="hidden sm:inline hover:text-emerald transition-colors">Experience</a>
+      <a href="/cv.pdf" download class="text-emerald hover:text-emerald-glow transition-colors" data-magnetic>CV ↓</a>
+    </div>
+  </div>
+</nav>
+
+<script>
+  const nav = document.getElementById('nav');
+  if (nav) {
+    const onScroll = () => {
+      const show = scrollY > innerHeight * 0.9;
+      nav.style.opacity = show ? '1' : '0';
+      nav.style.pointerEvents = show ? 'auto' : 'none';
+    };
+    onScroll();
+    addEventListener('scroll', onScroll, { passive: true });
+  }
+</script>

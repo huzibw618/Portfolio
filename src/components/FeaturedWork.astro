@@ -1,0 +1,158 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import type { CollectionEntry } from 'astro:content';
+import ProjectMedia from './ProjectMedia.astro';
+
+interface Props {
+  projects: CollectionEntry<'projects'>[];
+}
+const { projects } = Astro.props;
+
+// media type per featured slug
+const mediaType: Record<string, 'graph' | 'video' | 'image'> = {
+  'legal-rag': 'video',
+  'parallel-interleave': 'video',
+  'popsign': 'video',
+  'spacex-starship': 'video',
+  'surveillance-blind-spot': 'video',
+};
+
+// per-slug object-fit override ('contain' shows the full frame without cropping)
+const mediaFit: Record<string, 'cover' | 'contain'> = {
+  'popsign': 'contain',
+};
+
+const VIDEO_EXT = new Set(['.mp4', '.webm', '.mov']);
+const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']);
+
+// Auto-discover dropped assets in public/media/<slug>/ at build time.
+function readMedia(slug: string) {
+  const dir = path.join(process.cwd(), 'public', 'media', slug);
+  let files: string[] = [];
+  try {
+    files = fs.readdirSync(dir).sort();
+  } catch {
+    return { src: undefined, images: [] as string[] };
+  }
+  const video = files.find((f) => VIDEO_EXT.has(path.extname(f).toLowerCase()));
+  const images = files.filter((f) => IMAGE_EXT.has(path.extname(f).toLowerCase()));
+  return {
+    src: video ? `/media/${slug}/${video}` : undefined,
+    images: images.map((f) => `/media/${slug}/${f}`),
+  };
+}
+---
+
+<section id="work" class="relative z-10 bg-ink">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 pt-24 md:pt-36">
+    <p class="kicker mb-4" data-reveal>Selected Work</p>
+    <h2 class="display text-cream text-5xl md:text-7xl mb-4" data-reveal>Showcase</h2>
+  </div>
+
+  <div class="flex flex-col">
+    {projects.map((p, i) => {
+      const type = mediaType[p.slug] ?? 'video';
+      const media = readMedia(p.slug);
+      const flip = i % 2 === 1;
+      return (
+        <article class="featured-item relative py-16 md:py-28 border-t border-ink-line first:border-t-0">
+          <div class="mx-auto max-w-[1400px] px-5 md:px-10">
+            <div class={`grid lg:grid-cols-2 gap-8 lg:gap-16 items-center ${flip ? 'lg:[&>*:first-child]:order-2' : ''}`}>
+              <!-- text -->
+              <div class="max-w-xl" data-featured-text>
+                <div class="flex items-center gap-4 mb-6">
+                  <span class="font-mono text-sm text-emerald">0{i + 1}</span>
+                  <span class="h-px w-10 bg-emerald/40"></span>
+                  <span class="font-mono text-xs uppercase tracking-[0.2em] text-cream-dim">{p.data.category}</span>
+                </div>
+
+                <h3 class="display text-cream text-4xl md:text-6xl mb-6 will-change-transform" data-featured-title>
+                  {p.data.title}
+                </h3>
+
+                <p class="text-cream-dim text-base md:text-lg leading-relaxed mb-8" data-reveal>
+                  {p.data.summary}
+                </p>
+
+                <ul class="flex flex-wrap gap-2" data-reveal>
+                  {p.data.techStack.map((t) => <li class="tag">{t}</li>)}
+                </ul>
+              </div>
+
+              <!-- media -->
+              <div class="w-full" data-reveal data-reveal-delay="0.1" data-featured-media>
+                <ProjectMedia type={type} slug={p.slug} src={media.src} images={media.images} fit={mediaFit[p.slug]} />
+              </div>
+            </div>
+          </div>
+        </article>
+      );
+    })}
+  </div>
+</section>
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced) {
+    gsap.utils.toArray<HTMLElement>('[data-featured-title]').forEach((title) => {
+      gsap.fromTo(
+        title,
+        { opacity: 0, x: -40, letterSpacing: '0.04em' },
+        {
+          opacity: 1,
+          x: 0,
+          letterSpacing: '-0.02em',
+          duration: 1,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: title, start: 'top 85%', once: true },
+        }
+      );
+    });
+
+    // Scroll-linked depth: as each item passes through the viewport the media
+    // box grows while the text gently recedes. Scrubbed to scroll position.
+    gsap.utils.toArray<HTMLElement>('.featured-item').forEach((item) => {
+      const media = item.querySelector<HTMLElement>('[data-media-container]');
+      const text = item.querySelector<HTMLElement>('[data-featured-text]');
+      if (!media && !text) return;
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: item,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 1,
+        },
+      });
+
+      // Grow → hold at max across a margin around center → ease back out.
+      // The gap between GROW and HOLD_END keeps the value pinned at its peak,
+      // so you don't have to land exactly on center to see it maximised.
+      const GROW = 1;
+      const HOLD = 1.1;
+      const SHRINK = 1;
+      const shrinkAt = GROW + HOLD;
+      if (media) {
+        tl.fromTo(
+          media,
+          { scale: 0.9, transformOrigin: 'center center' },
+          { scale: 1.14, ease: 'none', duration: GROW },
+          0
+        ).to(media, { scale: 0.9, ease: 'none', duration: SHRINK }, shrinkAt);
+      }
+      if (text) {
+        tl.fromTo(
+          text,
+          { scale: 1, y: 0, transformOrigin: 'left center' },
+          { scale: 0.96, y: -22, ease: 'none', duration: GROW },
+          0
+        ).to(text, { scale: 1, y: 0, ease: 'none', duration: SHRINK }, shrinkAt);
+      }
+    });
+  }
+</script>

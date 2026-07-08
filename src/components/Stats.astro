@@ -1,0 +1,59 @@
+---
+// Numbers count up on scroll-in, set in mono.
+const stats = [
+  { value: 4.0, decimals: 1, prefix: '', suffix: '', label: 'GPA at Georgia Tech' },
+  { value: 20, decimals: 0, prefix: '', suffix: '+', label: 'Projects' },
+  { value: 1, decimals: 0, prefix: '', suffix: '', label: 'Publications' },
+];
+---
+
+<section class="relative z-10 bg-ink border-y border-ink-line">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-14 md:py-20">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-10">
+      {stats.map((s) => (
+        <div class="flex flex-col items-center text-center gap-2" data-reveal>
+          <span
+            class="font-mono text-4xl md:text-5xl lg:text-6xl text-cream tabular-nums leading-none"
+            data-count={s.value}
+            data-decimals={s.decimals}
+            data-prefix={s.prefix}
+            data-suffix={s.suffix}
+          >{s.prefix}0{s.suffix}</span>
+          <span class="font-mono text-xs uppercase tracking-[0.18em] text-cream-dim">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
+    const target = parseFloat(el.dataset.count!);
+    const dec = parseInt(el.dataset.decimals || '0', 10);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    const render = (v: number) => (el.textContent = `${prefix}${v.toFixed(dec)}${suffix}`);
+
+    if (reduced) { render(target); return; }
+
+    const obj = { v: 0 };
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top 90%',
+      once: true,
+      onEnter: () =>
+        gsap.to(obj, {
+          v: target,
+          duration: 1.6,
+          ease: 'power2.out',
+          onUpdate: () => render(obj.v),
+        }),
+    });
+  });
+</script>

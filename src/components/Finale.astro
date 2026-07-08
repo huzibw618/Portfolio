@@ -1,0 +1,46 @@
+---
+const links = [
+  { label: 'Email', href: 'mailto:huzaifah.wasim241@gmail.com', primary: true },
+  { label: 'GitHub', href: 'https://github.com/huzibw618' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/hbwasim' },
+  { label: 'Download CV ↓', href: '/cv.pdf', download: true },
+];
+---
+
+<section id="contact" class="relative z-10 bg-ink border-t border-ink-line min-h-screen flex flex-col justify-between">
+  <div class="flex-1 flex items-center">
+    <div class="mx-auto max-w-[1400px] w-full px-5 md:px-10 py-24">
+      <p class="kicker mb-8" data-reveal>Get in touch</p>
+      <h2 class="display text-cream text-6xl md:text-8xl lg:text-9xl mb-16" data-reveal>
+        Let's build<br />something.
+      </h2>
+
+      <div class="flex flex-wrap gap-4" data-reveal>
+        {links.map((l) => (
+          <a
+            href={l.href}
+            download={l.download}
+            target={l.href.startsWith('http') ? '_blank' : undefined}
+            rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+            data-magnetic="0.4"
+            class:list={[
+              'font-mono text-sm uppercase tracking-[0.15em] rounded-full px-7 py-4 border transition-colors duration-200',
+              l.primary
+                ? 'bg-emerald text-ink border-emerald hover:bg-emerald-glow'
+                : 'text-cream border-ink-line hover:border-emerald hover:text-emerald',
+            ]}
+          >{l.label}</a>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <footer class="border-t border-ink-line">
+    <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <span class="font-display font-semibold text-cream">Huzaifah Wasim</span>
+      <span class="font-mono text-xs uppercase tracking-[0.2em] text-cream-dim">
+        Atlanta, GA · © {new Date().getFullYear()}
+      </span>
+    </div>
+  </footer>
+</section>

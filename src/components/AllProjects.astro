@@ -1,0 +1,131 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ProjectCard from './ProjectCard.astro';
+
+interface Props { projects: CollectionEntry<'projects'>[]; }
+const { projects } = Astro.props;
+
+const categories = [
+  'All',
+  'Generative AI & NLP',
+  'Robotics & Reinforcement Learning',
+  'Computer Vision',
+  'Systems / Hardware / Formal Methods',
+  'Algorithms & Foundations',
+] as const;
+---
+
+<section id="projects" class="relative z-10 bg-ink border-t border-ink-line">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-24 md:py-36">
+    <p class="kicker mb-4" data-reveal>The Full Archive</p>
+    <h2 class="display text-cream text-5xl md:text-7xl mb-10" data-reveal>All projects.</h2>
+
+    <!-- filters -->
+    <div class="flex flex-wrap gap-2 mb-12" id="filters" data-reveal>
+      {categories.map((cat, i) => (
+        <button
+          data-filter={cat}
+          class:list={[
+            'filter-btn font-mono text-xs uppercase tracking-[0.15em] rounded-full px-4 py-2 border transition-colors duration-200',
+            i === 0
+              ? 'bg-emerald text-ink border-emerald'
+              : 'text-cream-dim border-ink-line hover:text-cream hover:border-cream-dim',
+          ]}
+        >{cat === 'Systems / Hardware / Formal Methods' ? 'Systems / Formal' : cat}</button>
+      ))}
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="grid">
+      {projects.map((p) => <ProjectCard project={p} />)}
+    </div>
+
+    <p id="no-results" class="hidden text-center font-mono text-sm text-cream-dim py-16">Nothing here yet.</p>
+  </div>
+</section>
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import { Flip } from 'gsap/Flip';
+  gsap.registerPlugin(ScrollTrigger, Flip);
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const grid = document.getElementById('grid')!;
+  const cards = gsap.utils.toArray<HTMLElement>('.project-card');
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+  const noResults = document.getElementById('no-results')!;
+
+  // staggered reveal on scroll — each card reveals exactly once. Without this
+  // guard, batch onEnter re-fires whenever a card re-crosses the start line
+  // (easy to do with smooth-scroll momentum), snapping it back to opacity:0 and
+  // causing a flash-in/out.
+  if (!reduced) {
+    ScrollTrigger.batch(cards, {
+      start: 'top 92%',
+      onEnter: (batch) => {
+        const fresh = batch.filter((el) => !el.dataset.revealed);
+        if (!fresh.length) return;
+        fresh.forEach((el) => (el.dataset.revealed = '1'));
+        gsap.fromTo(fresh, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.06, overwrite: true });
+      },
+    });
+    gsap.set(cards, { opacity: 0 });
+  }
+
+  // pointer-tracked glow position
+  cards.forEach((card) => {
+    card.addEventListener('pointermove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      card.style.setProperty('--my', `${e.clientY - r.top}px`);
+    });
+    // subtle tilt
+    if (!reduced && matchMedia('(hover:hover)').matches) {
+      card.addEventListener('pointermove', (e) => {
+        const r = card.getBoundingClientRect();
+        const rx = ((e.clientY - r.top) / r.height - 0.5) * -6;
+        const ry = ((e.clientX - r.left) / r.width - 0.5) * 6;
+        gsap.to(card, { rotateX: rx, rotateY: ry, transformPerspective: 800, duration: 0.4, ease: 'power2.out' });
+      });
+      card.addEventListener('pointerleave', () => gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.5 }));
+    }
+  });
+
+  // FLIP filtering
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const filter = tab.dataset.filter!;
+      tabs.forEach((t) => {
+        t.classList.toggle('bg-emerald', t === tab);
+        t.classList.toggle('text-ink', t === tab);
+        t.classList.toggle('border-emerald', t === tab);
+        t.classList.toggle('text-cream-dim', t !== tab);
+        t.classList.toggle('border-ink-line', t !== tab);
+      });
+
+      const state = Flip.getState(cards);
+      let visible = 0;
+      const shown: HTMLElement[] = [];
+      cards.forEach((card) => {
+        const show = filter === 'All' || card.dataset.category === filter;
+        card.style.display = show ? '' : 'none';
+        if (show) { visible++; shown.push(card); }
+      });
+      noResults.classList.toggle('hidden', visible > 0);
+      // Filtering is an explicit action — make every matching card visible even if
+      // it was never scroll-revealed (would otherwise stay at opacity:0).
+      gsap.set(shown, { opacity: 1, y: 0 });
+
+      if (!reduced) {
+        Flip.from(state, {
+          duration: 0.55,
+          ease: 'power2.inOut',
+          scale: true,
+          absolute: true,
+          onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4 }),
+          onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.85, duration: 0.3 }),
+        });
+      }
+    });
+  });
+</script>

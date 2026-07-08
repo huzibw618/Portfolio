@@ -1,0 +1,25 @@
+---
+const education = [
+  { degree: 'M.S. Computer Science — Machine Learning', school: 'Georgia Institute of Technology', location: 'Atlanta, GA', period: '2024–2026', detail: 'GPA 4.0 / 4.0 · Specialization in Machine Learning' },
+  { degree: 'B.E. Electrical Engineering', school: 'National University of Sciences & Technology (NUST)', location: 'Islamabad, Pakistan', period: '2018–2022', detail: 'Elected AI specialization stream' },
+];
+---
+
+<section id="education" class="relative z-10 bg-ink border-t border-ink-line">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-24 md:py-36">
+    <p class="kicker mb-4" data-reveal>Academics</p>
+    <h2 class="display text-cream text-5xl md:text-7xl mb-16" data-reveal>Education.</h2>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      {education.map((e) => (
+        <div class="border border-ink-line rounded-xl bg-ink-soft p-8 hover:border-emerald/40 transition-colors" data-reveal>
+          <span class="font-mono text-sm text-emerald">{e.period}</span>
+          <h3 class="font-display font-semibold text-2xl md:text-3xl text-cream mt-2 leading-snug">{e.degree}</h3>
+          <p class="text-cream-dim mt-3">{e.school}</p>
+          <p class="font-mono text-xs uppercase tracking-wider text-cream-dim/70 mt-1">{e.location}</p>
+          <p class="text-sm text-cream-dim mt-5 pt-5 border-t border-ink-line">{e.detail}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

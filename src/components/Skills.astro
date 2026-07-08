@@ -1,0 +1,30 @@
+---
+const skillGroups = [
+  { label: 'Languages', skills: ['Python', 'Java', 'C', 'C++', 'Bash', 'MATLAB', 'SQL'] },
+  { label: 'ML / DL', skills: ['PyTorch', 'TensorFlow', 'Scikit-Learn', 'Stable-Baselines3', 'Optuna', 'Hugging Face'] },
+  { label: 'Reinforcement Learning', skills: ['Gymnasium', 'OpenSpiel', 'Deep Q-Networks', 'Stable Baselines'] },
+  { label: 'CV & Robotics', skills: ['OpenCV', 'ROS / ROS2', 'Gazebo', 'SLAM', 'Kalman / Particle Filters', 'OAK-D'] },
+  { label: 'GenAI & NLP', skills: ['LLMs', 'RAG', 'Graph RAG', 'LangChain', 'Graphiti', 'Sentence-BERT', 'spaCy', 'MCP'] },
+  { label: 'Data & Databases', skills: ['NumPy', 'Pandas', 'PySpark', 'Neo4j', 'PostgreSQL', 'ChromaDB', 'FAISS'] },
+  { label: 'Cloud & DevOps', skills: ['AWS', 'Docker', 'Kubernetes', 'CI/CD', 'FastAPI', 'Pydantic'] },
+  { label: 'Hardware & Formal', skills: ['Jetson Nano', 'FPGAs (Vivado)', 'Storm', 'perf', 'Valgrind'] },
+];
+---
+
+<section id="skills" class="relative z-10 bg-ink border-t border-ink-line">
+  <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-24 md:py-36">
+    <p class="kicker mb-4" data-reveal>Toolkit</p>
+    <h2 class="display text-cream text-5xl md:text-7xl mb-16" data-reveal>Skills.</h2>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-12">
+      {skillGroups.map((g) => (
+        <div data-reveal>
+          <h3 class="font-mono text-sm uppercase tracking-[0.2em] text-emerald mb-4">{g.label}</h3>
+          <ul class="flex flex-wrap gap-x-3 gap-y-2">
+            {g.skills.map((s) => <li class="text-sm text-cream-dim">{s}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
