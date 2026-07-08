@@ -1,1 +1,0 @@
-import{m as o}from"./graph.C7avvgLR.js";const e=document.getElementById("graph-canvas");if(e){const t=()=>o(e).catch(a=>console.error("[graph]",a));"requestIdleCallback"in window?window.requestIdleCallback(t,{timeout:400}):setTimeout(t,60)}
