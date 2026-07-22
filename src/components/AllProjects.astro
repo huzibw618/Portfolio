@@ -44,57 +44,51 @@ const categories = [
 </section>
 
 <script>
-  import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  import { Flip } from 'gsap/Flip';
-  gsap.registerPlugin(ScrollTrigger, Flip);
+  import type { gsap as GSAP } from 'gsap';
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const grid = document.getElementById('grid')!;
-  const cards = gsap.utils.toArray<HTMLElement>('.project-card');
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('.project-card'));
   const tabs = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
   const noResults = document.getElementById('no-results')!;
 
-  // staggered reveal on scroll — each card reveals exactly once. Without this
-  // guard, batch onEnter re-fires whenever a card re-crosses the start line
-  // (easy to do with smooth-scroll momentum), snapping it back to opacity:0 and
-  // causing a flash-in/out.
-  if (!reduced) {
-    ScrollTrigger.batch(cards, {
-      start: 'top 92%',
-      onEnter: (batch) => {
-        const fresh = batch.filter((el) => !el.dataset.revealed);
-        if (!fresh.length) return;
-        fresh.forEach((el) => (el.dataset.revealed = '1'));
-        gsap.fromTo(fresh, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.06, overwrite: true });
-      },
-    });
-    gsap.set(cards, { opacity: 0 });
-  }
+  // Staggered scroll reveal is handled by the inline [data-reveal] observer in
+  // Layout.astro — no ScrollTrigger needed here.
+
+  // Everything below is hover/click-driven, so GSAP is fetched on the first
+  // interaction rather than during page load.
+  let gsapPromise: Promise<typeof GSAP> | null = null;
+  const loadGsap = () => (gsapPromise ??= import('gsap').then((m) => m.gsap));
 
   // pointer-tracked glow position
+  const tilt = !reduced && matchMedia('(hover:hover)').matches;
   cards.forEach((card) => {
     card.addEventListener('pointermove', (e) => {
       const r = card.getBoundingClientRect();
       card.style.setProperty('--mx', `${e.clientX - r.left}px`);
       card.style.setProperty('--my', `${e.clientY - r.top}px`);
+
+      // subtle tilt
+      if (!tilt) return;
+      const rx = ((e.clientY - r.top) / r.height - 0.5) * -6;
+      const ry = ((e.clientX - r.left) / r.width - 0.5) * 6;
+      loadGsap().then((gsap) =>
+        gsap.to(card, { rotateX: rx, rotateY: ry, transformPerspective: 800, duration: 0.4, ease: 'power2.out' })
+      );
     });
-    // subtle tilt
-    if (!reduced && matchMedia('(hover:hover)').matches) {
-      card.addEventListener('pointermove', (e) => {
-        const r = card.getBoundingClientRect();
-        const rx = ((e.clientY - r.top) / r.height - 0.5) * -6;
-        const ry = ((e.clientX - r.left) / r.width - 0.5) * 6;
-        gsap.to(card, { rotateX: rx, rotateY: ry, transformPerspective: 800, duration: 0.4, ease: 'power2.out' });
+    if (tilt) {
+      card.addEventListener('pointerleave', () => {
+        gsapPromise?.then((gsap) => gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.5 }));
       });
-      card.addEventListener('pointerleave', () => gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.5 }));
     }
   });
 
-  // FLIP filtering
+  // FLIP filtering. The Flip plugin (~14 kB) is only reachable by clicking a
+  // filter, so it is imported on first use instead of shipped on load.
   tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
+    tab.addEventListener('click', async () => {
       const filter = tab.dataset.filter!;
+      const [gsap, { Flip }] = await Promise.all([loadGsap(), import('gsap/Flip')]);
+      gsap.registerPlugin(Flip);
       tabs.forEach((t) => {
         t.classList.toggle('bg-emerald', t === tab);
         t.classList.toggle('text-ink', t === tab);
@@ -114,7 +108,7 @@ const categories = [
       noResults.classList.toggle('hidden', visible > 0);
       // Filtering is an explicit action — make every matching card visible even if
       // it was never scroll-revealed (would otherwise stay at opacity:0).
-      gsap.set(shown, { opacity: 1, y: 0 });
+      shown.forEach((card) => card.classList.add('is-revealed', 'reveal-done'));
 
       if (!reduced) {
         Flip.from(state, {

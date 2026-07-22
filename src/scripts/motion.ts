@@ -1,7 +1,8 @@
 // Global motion bootstrap. Runs once per page load.
 // - Lenis smooth scroll, driven by the GSAP ticker and synced to ScrollTrigger
 // - Custom emerald cursor dot + magnetic buttons (pointer devices only)
-// - Generic reveal-on-scroll for [data-reveal] elements
+// Reveal-on-scroll lives inline in Layout.astro (CSS + IntersectionObserver) so
+// content never waits on this bundle.
 // Everything here is a no-op under prefers-reduced-motion.
 import Lenis from 'lenis';
 import { gsap } from 'gsap';
@@ -15,13 +16,8 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matc
 export let lenis: Lenis | null = null;
 
 export function initMotion() {
-  if (reduced) {
-    // Reveal everything immediately; no smooth scroll, no cursor.
-    document.querySelectorAll<HTMLElement>('[data-reveal]').forEach((el) => {
-      el.style.opacity = '1';
-    });
-    return;
-  }
+  // No smooth scroll, no cursor. Reveals are already handled inline.
+  if (reduced) return;
 
   // --- Lenis <-> GSAP ScrollTrigger integration ---
   lenis = new Lenis({
@@ -33,7 +29,6 @@ export function initMotion() {
   gsap.ticker.add((time) => lenis!.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
 
-  initReveals();
   initAnchors();
   if (finePointer) {
     initCursor();
@@ -42,27 +37,6 @@ export function initMotion() {
 
   // Recalculate once fonts settle (Clash Display swap shifts layout)
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
-}
-
-// Generic fade-up reveal for anything tagged [data-reveal].
-// Optional data-reveal-delay (seconds).
-function initReveals() {
-  const items = gsap.utils.toArray<HTMLElement>('[data-reveal]');
-  items.forEach((el) => {
-    const delay = parseFloat(el.dataset.revealDelay || '0');
-    gsap.fromTo(
-      el,
-      { opacity: 0, y: 34 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.9,
-        delay,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 88%', once: true },
-      }
-    );
-  });
 }
 
 // Route in-page anchor links through Lenis so reveals stay in sync and the

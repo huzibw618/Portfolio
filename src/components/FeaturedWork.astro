@@ -26,6 +26,10 @@ const mediaFit: Record<string, 'cover' | 'contain'> = {
 const VIDEO_EXT = new Set(['.mp4', '.webm', '.mov']);
 const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']);
 
+// `poster.<ext>` is the still frame shown while a video buffers — it is picked
+// up as the poster rather than treated as gallery art.
+const POSTER = 'poster';
+
 // Auto-discover dropped assets in public/media/<slug>/ at build time.
 function readMedia(slug: string) {
   const dir = path.join(process.cwd(), 'public', 'media', slug);
@@ -33,12 +37,17 @@ function readMedia(slug: string) {
   try {
     files = fs.readdirSync(dir).sort();
   } catch {
-    return { src: undefined, images: [] as string[] };
+    return { src: undefined, poster: undefined, images: [] as string[] };
   }
   const video = files.find((f) => VIDEO_EXT.has(path.extname(f).toLowerCase()));
-  const images = files.filter((f) => IMAGE_EXT.has(path.extname(f).toLowerCase()));
+  const isPoster = (f: string) => path.basename(f, path.extname(f)).toLowerCase() === POSTER;
+  const poster = files.find((f) => isPoster(f) && IMAGE_EXT.has(path.extname(f).toLowerCase()));
+  const images = files.filter(
+    (f) => IMAGE_EXT.has(path.extname(f).toLowerCase()) && !isPoster(f)
+  );
   return {
     src: video ? `/media/${slug}/${video}` : undefined,
+    poster: poster ? `/media/${slug}/${poster}` : undefined,
     images: images.map((f) => `/media/${slug}/${f}`),
   };
 }
@@ -82,7 +91,7 @@ function readMedia(slug: string) {
 
               <!-- media -->
               <div class="w-full" data-reveal data-reveal-delay="0.1" data-featured-media>
-                <ProjectMedia type={type} slug={p.slug} src={media.src} images={media.images} fit={mediaFit[p.slug]} />
+                <ProjectMedia type={type} slug={p.slug} src={media.src} poster={media.poster} images={media.images} fit={mediaFit[p.slug]} />
               </div>
             </div>
           </div>
@@ -93,12 +102,19 @@ function readMedia(slug: string) {
 </section>
 
 <script>
-  import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  gsap.registerPlugin(ScrollTrigger);
+  import { whenNear } from '../scripts/near';
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduced) {
+    // Held until the showcase nears the viewport so gsap + ScrollTrigger stay
+    // off the initial download.
+    whenNear(document.querySelector('.featured-item'), async () => {
+    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+      import('gsap'),
+      import('gsap/ScrollTrigger'),
+    ]);
+    gsap.registerPlugin(ScrollTrigger);
+
     gsap.utils.toArray<HTMLElement>('[data-featured-title]').forEach((title) => {
       gsap.fromTo(
         title,
@@ -153,6 +169,7 @@ function readMedia(slug: string) {
           0
         ).to(text, { scale: 1, y: 0, ease: 'none', duration: SHRINK }, shrinkAt);
       }
+    });
     });
   }
 </script>

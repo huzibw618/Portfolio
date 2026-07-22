@@ -27,33 +27,41 @@ const stats = [
 </section>
 
 <script>
-  import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  gsap.registerPlugin(ScrollTrigger);
+  import { whenNear } from '../scripts/near';
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const counters = document.querySelectorAll<HTMLElement>('[data-count]');
+  const fmt = (el: HTMLElement, v: number) =>
+    (el.textContent = `${el.dataset.prefix || ''}${v.toFixed(
+      parseInt(el.dataset.decimals || '0', 10)
+    )}${el.dataset.suffix || ''}`);
 
-  document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
-    const target = parseFloat(el.dataset.count!);
-    const dec = parseInt(el.dataset.decimals || '0', 10);
-    const prefix = el.dataset.prefix || '';
-    const suffix = el.dataset.suffix || '';
-    const render = (v: number) => (el.textContent = `${prefix}${v.toFixed(dec)}${suffix}`);
+  if (reduced) {
+    counters.forEach((el) => fmt(el, parseFloat(el.dataset.count!)));
+  } else {
+    // GSAP is only pulled in as the stats row approaches the viewport.
+    whenNear(counters[0], async () => {
+      const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+        import('gsap'),
+        import('gsap/ScrollTrigger'),
+      ]);
+      gsap.registerPlugin(ScrollTrigger);
 
-    if (reduced) { render(target); return; }
-
-    const obj = { v: 0 };
-    ScrollTrigger.create({
-      trigger: el,
-      start: 'top 90%',
-      once: true,
-      onEnter: () =>
-        gsap.to(obj, {
-          v: target,
-          duration: 1.6,
-          ease: 'power2.out',
-          onUpdate: () => render(obj.v),
-        }),
+      counters.forEach((el) => {
+        const obj = { v: 0 };
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 90%',
+          once: true,
+          onEnter: () =>
+            gsap.to(obj, {
+              v: parseFloat(el.dataset.count!),
+              duration: 1.6,
+              ease: 'power2.out',
+              onUpdate: () => fmt(el, obj.v),
+            }),
+        });
+      });
     });
-  });
+  }
 </script>

@@ -19,25 +19,39 @@ const COLORS: Record<GNode['type'], number> = {
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
+// One fetch + one normalisation pass shared by every graph instance on the page
+// (hero canvas and the featured-media canvas both want the same 94 kB payload).
+let graphData: Promise<Graph> | null = null;
+function loadGraph(): Promise<Graph> {
+  graphData ??= fetch('/data/graph.json')
+    .then((r) => r.json())
+    .then((graph: Graph) => {
+      // Center + scale baked coords into a tidy radius.
+      const target = 120;
+      let maxR = 0;
+      for (const n of graph.nodes) maxR = Math.max(maxR, Math.hypot(n.x, n.y, n.z));
+      const scale = target / (maxR || 1);
+      for (const n of graph.nodes) {
+        n.x *= scale;
+        n.y *= scale;
+        n.z *= scale;
+      }
+      return graph;
+    });
+  return graphData;
+}
+
 export async function mountGraph(canvas: HTMLCanvasElement) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobile = matchMedia('(max-width: 767px)').matches;
 
-  const res = await fetch('/data/graph.json');
-  const graph: Graph = await res.json();
-
-  // Center + scale baked coords into a tidy radius.
-  const target = 120;
-  let maxR = 0;
-  for (const n of graph.nodes) maxR = Math.max(maxR, Math.hypot(n.x, n.y, n.z));
-  const scale = target / (maxR || 1);
-  for (const n of graph.nodes) {
-    n.x *= scale;
-    n.y *= scale;
-    n.z *= scale;
-  }
+  // Desktop needs three.js; start that chunk downloading alongside the data
+  // instead of after it (the import inside mount3D then resolves from cache).
+  const three = mobile ? null : import('three');
+  const graph = await loadGraph();
 
   if (mobile) return mount2D(canvas, graph, reduced);
+  await three;
   return mount3D(canvas, graph, reduced);
 }
 
@@ -210,14 +224,7 @@ async function mount3D(canvas: HTMLCanvasElement, graph: Graph, reduced: boolean
 // emerald as the section scrolls through the viewport.
 export async function mountGraphMedia(canvas: HTMLCanvasElement, container: HTMLElement) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const THREE = await import('three');
-  const graph: Graph = await (await fetch('/data/graph.json')).json();
-
-  // scale into a tidy radius (same as hero)
-  let maxR = 0;
-  for (const n of graph.nodes) maxR = Math.max(maxR, Math.hypot(n.x, n.y, n.z));
-  const s = 120 / (maxR || 1);
-  for (const n of graph.nodes) { n.x *= s; n.y *= s; n.z *= s; }
+  const [THREE, graph] = await Promise.all([import('three'), loadGraph()]);
 
   const idIndex = new Map(graph.nodes.map((n, i) => [n.id, i]));
   const path = (graph.meta.featuredPath || []).filter((id) => idIndex.has(id));

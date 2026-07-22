@@ -65,9 +65,7 @@ const roles = [
 </section>
 
 <script>
-  import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  gsap.registerPlugin(ScrollTrigger);
+  import { whenNear } from '../scripts/near';
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fill = document.getElementById('timeline-fill');
@@ -77,10 +75,17 @@ const roles = [
     if (reduced) {
       fill.style.transform = 'scaleY(1)';
     } else {
-      gsap.to(fill, {
-        scaleY: 1,
-        ease: 'none',
-        scrollTrigger: { trigger: timeline, start: 'top 70%', end: 'bottom 80%', scrub: 0.5 },
+      whenNear(timeline, async () => {
+        const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+          import('gsap'),
+          import('gsap/ScrollTrigger'),
+        ]);
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.to(fill, {
+          scaleY: 1,
+          ease: 'none',
+          scrollTrigger: { trigger: timeline, start: 'top 70%', end: 'bottom 80%', scrub: 0.5 },
+        });
       });
     }
   }

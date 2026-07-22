@@ -9,55 +9,31 @@ const line2 = 'WASIM';
 <section id="hero" class="relative h-[180vh]">
   <div class="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden">
     <div class="relative z-10 px-6 text-center">
-      <p class="font-mono uppercase text-emerald text-sm md:text-base tracking-[0.2em] mb-6 md:mb-8" id="hero-kicker" data-hero-fade>
+      <p class="font-mono uppercase text-emerald text-sm md:text-base tracking-[0.2em] mb-6 md:mb-8" id="hero-kicker" data-hero-fade style="--i: 0">
         <span class="text-emerald"></span>&nbsp; Machine Learning Engineer &nbsp;·&nbsp; Georgia Tech &nbsp;·&nbsp; NUST
       </p>
 
       <h1 class="font-display font-semibold tracking-[-0.015em] text-cream text-[15vw] md:text-[12vw] lg:text-[11rem] leading-[0.92]">
         <span class="block overflow-hidden pb-[0.04em]">
-          <span class="block will-change-transform" data-line-inner>{line1}</span>
+          <span class="block will-change-transform" data-line-inner style="--i: 0">{line1}</span>
         </span>
         <span class="block overflow-hidden pb-[0.04em]">
-          <span class="block will-change-transform" data-line-inner>{line2}</span>
+          <span class="block will-change-transform" data-line-inner style="--i: 1">{line2}</span>
         </span>
       </h1>
 
-      <p class="mx-auto mt-6 md:mt-8 max-w-2xl text-base md:text-xl text-cream-dim" data-hero-fade>
+      <p class="mx-auto mt-6 md:mt-8 max-w-2xl text-base md:text-xl text-cream-dim" data-hero-fade style="--i: 1">
         Machine learning engineer — generative AI, reinforcement learning, and robotics.
       </p>
     </div>
 
     <!-- scroll indicator -->
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" data-hero-fade aria-hidden="true">
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" data-hero-fade-x style="--i: 2" aria-hidden="true">
       <span class="font-mono text-xs uppercase tracking-[0.3em] text-cream-dim">Scroll</span>
       <span class="block h-10 w-px bg-gradient-to-b from-emerald to-transparent" id="scroll-line"></span>
     </div>
   </div>
 </section>
 
-<script>
-  import { gsap } from 'gsap';
-
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const lines = gsap.utils.toArray<HTMLElement>('[data-line-inner]');
-  const fades = gsap.utils.toArray<HTMLElement>('[data-hero-fade]');
-
-  if (reduced) {
-    gsap.set([...lines, ...fades], { opacity: 1, y: 0, yPercent: 0 });
-  } else {
-    gsap.set(lines, { yPercent: 108 });
-    gsap.set(fades, { opacity: 0, y: 20 });
-
-    const tl = gsap.timeline({ delay: 0.15 });
-    tl.to(lines, {
-      yPercent: 0,
-      duration: 1.15,
-      ease: 'power4.out',
-      stagger: 0.12,
-    })
-      .to(fades, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.12 }, '-=0.6');
-
-    // gentle scroll-indicator pulse
-    gsap.to('#scroll-line', { scaleY: 0.4, transformOrigin: 'top', duration: 1.1, repeat: -1, yoyo: true, ease: 'power1.inOut' });
-  }
-</script>
+<!-- The intro choreography is pure CSS (see `hero-line` / `hero-fade` in
+     global.css) so above-the-fold content never waits on a JS bundle. -->

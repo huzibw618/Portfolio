@@ -38,6 +38,16 @@ const ogImage = `${siteUrl}/profile.png`;
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Display face used by the hero + every section heading: preload so the
+         swap happens before first paint instead of reflowing after it. -->
+    <link
+      rel="preload"
+      href="/fonts/ClashDisplay-Semibold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
     <!-- Flag motion capability before paint so [data-reveal] can hide safely -->
     <script is:inline>
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -51,11 +61,74 @@ const ogImage = `${siteUrl}/profile.png`;
 
     <slot />
 
-    <!-- Global motion bootstrap: Lenis smooth scroll wired into GSAP ScrollTrigger,
-         custom cursor, magnetic buttons, and generic reveal-on-scroll. -->
+    <!-- Reveal-on-scroll. Inline and dependency-free on purpose: it runs the
+         moment the HTML is parsed, so [data-reveal] content is never waiting on
+         the gsap/ScrollTrigger bundle to arrive over the network. The observer
+         fires a viewport-height early, so elements have finished fading in by
+         the time you scroll to them. -->
+    <script is:inline>
+      (function () {
+        var els = document.querySelectorAll('[data-reveal]');
+        var show = function (el, delay) {
+          if (delay) el.style.setProperty('--reveal-delay', delay.toFixed(2) + 's');
+          el.classList.add('is-revealed');
+        };
+
+        if (
+          !document.documentElement.classList.contains('motion') ||
+          !('IntersectionObserver' in window)
+        ) {
+          els.forEach(function (el) {
+            el.classList.add('is-revealed', 'reveal-done');
+          });
+          return;
+        }
+
+        // Drop the transition + will-change once the fade has played, so the
+        // element's own hover transitions (and GSAP tweens) run unimpeded.
+        document.addEventListener(
+          'transitionend',
+          function (e) {
+            var el = e.target;
+            if (el instanceof Element && el.hasAttribute('data-reveal')) {
+              el.classList.add('reveal-done');
+            }
+          },
+          true
+        );
+
+        var io = new IntersectionObserver(
+          function (entries) {
+            var i = 0;
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              var el = entry.target;
+              io.unobserve(el);
+              var delay = parseFloat(el.dataset.revealDelay || '0');
+              // Siblings entering together cascade instead of popping at once.
+              if (el.hasAttribute('data-reveal-stagger')) delay += i++ * 0.05;
+              show(el, delay);
+            });
+          },
+          // A viewport of slack on both sides: content fades in well before you
+          // reach it, and anything jumped over by an anchor link still counts.
+          { rootMargin: '100% 0px', threshold: 0 }
+        );
+        els.forEach(function (el) {
+          io.observe(el);
+        });
+      })();
+    </script>
+
+    <!-- Motion extras: Lenis smooth scroll wired into GSAP ScrollTrigger,
+         custom cursor, magnetic buttons. Purely decorative — deferred to idle
+         so it never competes with content for bandwidth on first load. -->
     <script>
-      import { initMotion } from '../scripts/motion';
-      initMotion();
+      const boot = () =>
+        import('../scripts/motion').then((m) => m.initMotion());
+      'requestIdleCallback' in window
+        ? (window as any).requestIdleCallback(boot, { timeout: 1200 })
+        : setTimeout(boot, 200);
     </script>
   </body>
 </html>

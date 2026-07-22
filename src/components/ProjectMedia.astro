@@ -85,13 +85,28 @@ const showPlaceholder = (type === 'video' && !hasVideo) || (type === 'image' && 
 </style>
 
 <script>
-  // Mount graph-media instances
-  import { mountGraphMedia } from '../scripts/graph';
-  document.querySelectorAll<HTMLCanvasElement>('[data-graph-media]').forEach((canvas) => {
-    const container = canvas.closest('[data-media-container]') as HTMLElement;
-    const start = () => mountGraphMedia(canvas, container).catch((e) => console.error('[graph-media]', e));
-    'requestIdleCallback' in window ? (window as any).requestIdleCallback(start, { timeout: 600 }) : setTimeout(start, 120);
-  });
+  // Mount graph-media instances. These live far down the page and each one pulls
+  // in three.js (~190 kB gz), so they are held back until the section is nearly
+  // in view rather than mounted on idle during initial load.
+  const canvases = document.querySelectorAll<HTMLCanvasElement>('[data-graph-media]');
+  if (canvases.length) {
+    const mount = async (canvas: HTMLCanvasElement) => {
+      const { mountGraphMedia } = await import('../scripts/graph');
+      const container = canvas.closest('[data-media-container]') as HTMLElement;
+      mountGraphMedia(canvas, container).catch((e) => console.error('[graph-media]', e));
+    };
+    const gio = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          gio.unobserve(e.target);
+          mount(e.target as HTMLCanvasElement);
+        });
+      },
+      { rootMargin: '50% 0px' }
+    );
+    canvases.forEach((c) => gio.observe(c));
+  }
 
   // Lazy-play videos on scroll-in, with a 3s pause on the last frame before looping.
   const LOOP_PAUSE_MS = 3000;
@@ -118,12 +133,28 @@ const showPlaceholder = (type === 'video' && !hasVideo) || (type === 'image' && 
       });
     });
 
+    // Two stages, so a multi-MB clip isn't starting from zero at the moment it
+    // becomes visible: begin buffering a viewport out, start playback once it
+    // is actually on screen.
+    const bufferIo = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const v = e.target as HTMLVideoElement;
+          bufferIo.unobserve(v);
+          v.preload = 'auto';
+          v.load?.();
+        });
+      },
+      { rootMargin: '100% 0px' }
+    );
+    vids.forEach((v) => bufferIo.observe(v));
+
     const vio = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
         const v = e.target as HTMLVideoElement;
         if (e.isIntersecting) {
           visible.add(v);
-          v.load?.();
           v.play?.().catch(() => {});
         } else {
           visible.delete(v);
