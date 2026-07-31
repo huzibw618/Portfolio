@@ -50,6 +50,7 @@ const categories = [
   const cards = Array.from(document.querySelectorAll<HTMLElement>('.project-card'));
   const tabs = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
   const noResults = document.getElementById('no-results')!;
+  const grid = document.getElementById('grid')!;
 
   // Staggered scroll reveal is handled by the inline [data-reveal] observer in
   // Layout.astro — no ScrollTrigger needed here.
@@ -98,6 +99,10 @@ const categories = [
       });
 
       const state = Flip.getState(cards);
+      // Measured while the old set is still laid out. `absolute: true` below
+      // lifts every card out of flow, which would otherwise collapse #grid to
+      // zero height mid-tween and yank the section border up over the cards.
+      const heightBefore = grid.offsetHeight;
       let visible = 0;
       const shown: HTMLElement[] = [];
       cards.forEach((card) => {
@@ -111,6 +116,9 @@ const categories = [
       shown.forEach((card) => card.classList.add('is-revealed', 'reveal-done'));
 
       if (!reduced) {
+        // Read the target height while the new set is still in normal flow.
+        const heightAfter = grid.offsetHeight;
+
         Flip.from(state, {
           duration: 0.55,
           ease: 'power2.inOut',
@@ -119,6 +127,21 @@ const categories = [
           onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4 }),
           onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.85, duration: 0.3 }),
         });
+
+        // Pin the grid open and glide it to its new size alongside the cards.
+        // Same duration/ease as the Flip so the border tracks the layout, then
+        // hand height back to the grid so later resizes reflow normally.
+        gsap.fromTo(
+          grid,
+          { height: heightBefore },
+          {
+            height: heightAfter,
+            duration: 0.55,
+            ease: 'power2.inOut',
+            overwrite: true,
+            onComplete: () => grid.style.removeProperty('height'),
+          }
+        );
       }
     });
   });
