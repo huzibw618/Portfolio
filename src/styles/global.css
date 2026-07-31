@@ -75,12 +75,24 @@
 }
 
 /* --- Custom emerald cursor dot (desktop, pointer devices) --- */
+/* The dot replaces the system cursor rather than accompanying it, so the native
+   arrow is hidden wherever the dot actually runs. Both guards matter: the media
+   query mirrors the pointer check in motion.ts, and `.motion` keeps the real
+   cursor for reduced-motion users, whose dot is display:none below. The `*` is
+   needed to beat the UA stylesheet's cursor: pointer on links and buttons. */
+@media (hover: hover) and (pointer: fine) {
+  html.motion,
+  html.motion * {
+    cursor: none;
+  }
+}
+
 .cursor-dot {
   position: fixed;
   top: 0;
   left: 0;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #00e599;
   pointer-events: none;

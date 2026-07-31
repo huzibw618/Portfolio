@@ -1,4 +1,6 @@
 ---
+// Official PoPETs landing page (abstract, PDF, BibTeX, DOI 10.2478/popets-2021-0055).
+const PAPER_URL = 'https://petsymposium.org/popets/2021/popets-2021-0055.php';
 ---
 <section id="publication" class="relative z-10 bg-ink border-t border-ink-line">
   <div class="mx-auto max-w-[1400px] px-5 md:px-10 py-24 md:py-36">
@@ -11,13 +13,24 @@
         <span class="font-mono text-xs text-cream-dim">Peer-reviewed</span>
       </div>
 
-      <h3 class="display text-cream text-3xl md:text-5xl leading-[1.05] mb-8">
-        A First Look at Private Communications in Video Games using Visual Features
-      </h3>
+      <a
+        href={PAPER_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="group block mb-8"
+      >
+        <h3 class="display text-cream text-3xl md:text-5xl leading-[1.05] group-hover:text-emerald transition-colors">
+          A First Look at Private Communications in Video Games using Visual Features
+        </h3>
+        <span class="mt-5 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-emerald">
+          Read the paper
+          <span class="transition-transform group-hover:translate-x-1">&#8599;</span>
+        </span>
+      </a>
 
       <p class="text-cream-dim leading-relaxed mb-6 max-w-2xl">
         A. Wajid, N. Kamal, M. Sharjeel, R. M. Sheikh, <span class="text-cream">H. B. Wasim</span>,
-        M. H. Ali, W. Hussain, F. Zaffar.
+        M. H. Ali, W. Hussain, S. T. Ali, L. Anjum.
         <span class="text-cream-dim/70">Proceedings on Privacy Enhancing Technologies, 2021(3), pp. 433–452.</span>
       </p>
 
