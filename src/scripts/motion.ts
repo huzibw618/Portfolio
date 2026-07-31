@@ -13,7 +13,7 @@ gsap.registerPlugin(ScrollTrigger);
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-export let lenis: Lenis | null = null;
+let lenis: Lenis | null = null;
 
 export function initMotion() {
   // No smooth scroll, no cursor. Reveals are already handled inline.

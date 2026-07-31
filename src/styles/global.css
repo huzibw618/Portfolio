@@ -58,9 +58,6 @@
     @apply font-mono text-xs uppercase tracking-wider text-cream-dim
            border border-ink-line rounded-full px-2.5 py-1;
   }
-  .rule {
-    @apply h-px w-full bg-ink-line;
-  }
 }
 
 /* --- Film grain overlay --- */

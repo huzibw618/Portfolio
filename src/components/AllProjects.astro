@@ -35,8 +35,14 @@ const categories = [
       ))}
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="grid">
-      {projects.map((p) => <ProjectCard project={p} />)}
+    <!-- The shell exists purely to reserve vertical space during a filter
+         transition. Pinning a height on #grid itself would feed the extra
+         pixels into its auto rows and resize the cards; a plain block absorbs
+         it without touching grid layout. -->
+    <div id="grid-shell">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="grid">
+        {projects.map((p) => <ProjectCard project={p} />)}
+      </div>
     </div>
 
     <p id="no-results" class="hidden text-center font-mono text-sm text-cream-dim py-16">Nothing here yet.</p>
@@ -51,6 +57,7 @@ const categories = [
   const tabs = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
   const noResults = document.getElementById('no-results')!;
   const grid = document.getElementById('grid')!;
+  const gridShell = document.getElementById('grid-shell')!;
 
   // Staggered scroll reveal is handled by the inline [data-reveal] observer in
   // Layout.astro — no ScrollTrigger needed here.
@@ -59,6 +66,10 @@ const categories = [
   // interaction rather than during page load.
   let gsapPromise: Promise<typeof GSAP> | null = null;
   const loadGsap = () => (gsapPromise ??= import('gsap').then((m) => m.gsap));
+
+  // The filter transition currently running, if any. Held so a second click can
+  // finish it before measuring anything.
+  let activeFlip: ReturnType<typeof GSAP.timeline> | null = null;
 
   // pointer-tracked glow position
   const tilt = !reduced && matchMedia('(hover:hover)').matches;
@@ -98,11 +109,15 @@ const categories = [
         t.classList.toggle('border-ink-line', t !== tab);
       });
 
+      // Land any in-flight transition first. Mid-Flip the cards are absolutely
+      // positioned, so the grid measures near zero and every height below would
+      // be garbage. Jumping to the end restores flow and clears the old pin.
+      activeFlip?.progress(1);
+      activeFlip = null;
+
       const state = Flip.getState(cards);
-      // Measured while the old set is still laid out. `absolute: true` below
-      // lifts every card out of flow, which would otherwise collapse #grid to
-      // zero height mid-tween and yank the section border up over the cards.
       const heightBefore = grid.offsetHeight;
+
       let visible = 0;
       const shown: HTMLElement[] = [];
       cards.forEach((card) => {
@@ -116,31 +131,39 @@ const categories = [
       shown.forEach((card) => card.classList.add('is-revealed', 'reveal-done'));
 
       if (!reduced) {
-        // Read the target height while the new set is still in normal flow.
+        // Natural height of the new set, still in normal flow.
         const heightAfter = grid.offsetHeight;
+        // `absolute: true` lifts every card out of flow, leaving nothing to
+        // size the grid — it would collapse mid-tween and drag the section
+        // border up across the cards. The shell holds that space open instead,
+        // so #grid keeps sizing itself and the cards never resize.
+        gridShell.style.height = `${heightBefore}px`;
 
-        Flip.from(state, {
+        const flip = (activeFlip = Flip.from(state, {
           duration: 0.55,
           ease: 'power2.inOut',
           scale: true,
           absolute: true,
           onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4 }),
           onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.85, duration: 0.3 }),
-        });
+        }));
 
-        // Pin the grid open and glide it to its new size alongside the cards.
-        // Same duration/ease as the Flip so the border tracks the layout, then
-        // hand height back to the grid so later resizes reflow normally.
-        gsap.fromTo(
-          grid,
-          { height: heightBefore },
+        // On the Flip's own timeline, so the border and the cards land on the
+        // same frame. A separate tween finishes independently and the grid
+        // settles a second time after the cards have stopped.
+        // The callback rides on this child tween rather than the timeline:
+        // Flip owns the timeline's onComplete and uses it to pull the cards
+        // back out of absolute positioning.
+        flip.to(
+          gridShell,
           {
             height: heightAfter,
             duration: 0.55,
             ease: 'power2.inOut',
-            overwrite: true,
-            onComplete: () => grid.style.removeProperty('height'),
-          }
+            // Hand sizing back so later resizes reflow normally.
+            onComplete: () => gridShell.style.removeProperty('height'),
+          },
+          0
         );
       }
     });
